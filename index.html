@@ -8,677 +8,490 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #080c12; --panel: #0d1520; --border: #1a2a3a;
-    --accent: #00e5ff; --accent2: #ff6b35; --accent3: #7fff6b;
-    --text: #c8d8e8; --text-dim: #4a6a8a;
-  }
-  body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-  header { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid var(--border); background: var(--panel); flex-shrink: 0; z-index: 10; }
-  header h1 { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: 0.08em; color: #fff; }
-  header h1 span { color: var(--accent); }
-  .stats { display: flex; gap: 24px; font-size: 0.7rem; color: var(--text-dim); }
-  .stats b { color: var(--accent); font-weight: 500; }
-  .load-btn { background: transparent; border: 1px solid var(--accent); color: var(--accent); font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 6px 14px; cursor: pointer; letter-spacing: 0.1em; transition: all 0.2s; }
-  .load-btn:hover { background: var(--accent); color: var(--bg); }
-  .main { display: flex; flex: 1; overflow: hidden; }
-  .sidebar { width: 220px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
-  .sidebar-section { padding: 16px; border-bottom: 1px solid var(--border); }
-  .sidebar-section h3 { font-size: 0.6rem; letter-spacing: 0.2em; color: var(--text-dim); text-transform: uppercase; margin-bottom: 12px; }
-  .control-row { margin-bottom: 12px; }
-  .control-row label { display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-dim); margin-bottom: 5px; }
-  .control-row label span { color: var(--text); }
-  input[type=range] { width: 100%; -webkit-appearance: none; height: 2px; background: var(--border); outline: none; border-radius: 2px; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; cursor: pointer; }
-  .search-box { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.7rem; padding: 7px 10px; outline: none; transition: border-color 0.2s; }
-  .search-box:focus { border-color: var(--accent); }
-  .search-box::placeholder { color: var(--text-dim); }
-  .company-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
-  .company-item { display: flex; align-items: center; gap: 8px; font-size: 0.65rem; cursor: pointer; color: var(--text-dim); transition: color 0.15s; }
-  .company-item:hover { color: var(--text); }
-  .company-item.active { color: var(--text); }
-  .company-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .canvas-wrap { flex: 1; position: relative; overflow: hidden; }
-  canvas { width: 100%; height: 100%; cursor: grab; display: block; }
-  canvas.grabbing { cursor: grabbing; }
-  .info-panel { position: absolute; bottom: 20px; right: 20px; width: 260px; background: var(--panel); border: 1px solid var(--border); padding: 16px; display: none; z-index: 5; }
-  .info-panel.visible { display: block; }
-  .info-panel h2 { font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
-  .info-panel .role { font-size: 0.65rem; color: var(--text-dim); margin-bottom: 12px; }
-  .info-panel .companies { font-size: 0.65rem; color: var(--text-dim); line-height: 1.8; }
-  .info-panel .companies b { color: var(--text); font-weight: 400; }
-  .info-close { position: absolute; top: 10px; right: 12px; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.8rem; }
-  .info-close:hover { color: var(--text); }
-  .tooltip { position: absolute; background: var(--panel); border: 1px solid var(--border); padding: 6px 10px; font-size: 0.65rem; color: var(--accent); pointer-events: none; display: none; z-index: 10; white-space: nowrap; }
-  .mock-notice { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(255,107,53,0.1); border: 1px solid var(--accent2); color: var(--accent2); font-size: 0.6rem; padding: 5px 14px; letter-spacing: 0.1em; pointer-events: none; }
-  .loading-overlay { position: absolute; inset: 0; background: rgba(8,12,18,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; gap: 16px; }
-  .loading-overlay.hidden { display: none; }
-  .loading-bar-wrap { width: 240px; height: 2px; background: var(--border); }
-  .loading-bar { height: 100%; background: var(--accent); transition: width 0.3s; width: 0%; }
-  .loading-text { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.15em; }
-  #fileInput { display: none; }
+  :root { --bg:#080c12;--panel:#0d1520;--border:#1a2a3a;--accent:#00e5ff;--accent2:#ff6b35;--text:#c8d8e8;--text-dim:#4a6a8a; }
+  body { background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;height:100vh;overflow:hidden;display:flex;flex-direction:column; }
+  header { display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0;gap:16px; }
+  header h1 { font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;letter-spacing:0.08em;color:#fff;white-space:nowrap; }
+  header h1 span { color:var(--accent); }
+  .stats { display:flex;gap:20px;font-size:0.7rem;color:var(--text-dim);flex-wrap:wrap; }
+  .stats b { color:var(--accent);font-weight:500; }
+  .load-btn { background:transparent;border:1px solid var(--accent);color:var(--accent);font-family:'DM Mono',monospace;font-size:0.7rem;padding:6px 14px;cursor:pointer;letter-spacing:0.1em;transition:all 0.2s;white-space:nowrap; }
+  .load-btn:hover { background:var(--accent);color:var(--bg); }
+  .main { display:flex;flex:1;overflow:hidden; }
+  .sidebar { width:210px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto; }
+  .sidebar-section { padding:14px 16px;border-bottom:1px solid var(--border); }
+  .sidebar-section h3 { font-size:0.58rem;letter-spacing:0.2em;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px; }
+  .search-box { width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:0.7rem;padding:7px 10px;outline:none;transition:border-color 0.2s; }
+  .search-box:focus { border-color:var(--accent); }
+  .search-box::placeholder { color:var(--text-dim); }
+  .cluster-list { display:flex;flex-direction:column;gap:3px; }
+  .cluster-item { display:flex;align-items:center;gap:7px;font-size:0.62rem;cursor:pointer;padding:4px 5px;border-radius:2px;transition:background 0.15s; }
+  .cluster-item:hover { background:rgba(255,255,255,0.04); }
+  .cluster-item.active { background:rgba(0,229,255,0.07); }
+  .cluster-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+  .cluster-name { flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim); }
+  .cluster-item.active .cluster-name { color:var(--text); }
+  .cluster-count { color:var(--accent);font-size:0.58rem; }
+  .canvas-wrap { flex:1;position:relative;overflow:hidden; }
+  canvas { width:100%;height:100%;display:block;cursor:grab; }
+  canvas.grabbing { cursor:grabbing; }
+  canvas.pointer { cursor:pointer; }
+  .info-panel { position:absolute;bottom:20px;right:20px;width:260px;background:var(--panel);border:1px solid var(--border);padding:16px;display:none;z-index:5;max-height:55vh;overflow-y:auto; }
+  .info-panel.visible { display:block; }
+  .info-panel h2 { font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;color:#fff;margin-bottom:4px; }
+  .info-sub { font-size:0.62rem;color:var(--text-dim);margin-bottom:10px; }
+  .info-body { font-size:0.62rem;color:var(--text-dim);line-height:1.9; }
+  .info-close { position:absolute;top:10px;right:12px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:0.8rem; }
+  .info-close:hover { color:var(--text); }
+  .tooltip { position:absolute;background:var(--panel);border:1px solid var(--border);padding:5px 10px;font-size:0.62rem;color:var(--accent);pointer-events:none;display:none;z-index:10;white-space:nowrap; }
+  .mock-notice { position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(255,107,53,0.1);border:1px solid var(--accent2);color:var(--accent2);font-size:0.58rem;padding:4px 12px;pointer-events:none;white-space:nowrap;z-index:4; }
+  .hint { position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-size:0.58rem;color:var(--text-dim);pointer-events:none;text-align:center;letter-spacing:0.08em;white-space:nowrap; }
+  .breadcrumb { position:absolute;top:14px;left:14px;font-size:0.62rem;color:var(--text-dim);cursor:pointer;z-index:4;background:var(--panel);border:1px solid var(--border);padding:5px 10px;display:none; }
+  .breadcrumb:hover { color:var(--accent);border-color:var(--accent); }
+  .zoom-btns { position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:4px;z-index:4; }
+  .zoom-btn { width:30px;height:30px;background:var(--panel);border:1px solid var(--border);color:var(--text);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s; }
+  .zoom-btn:hover { border-color:var(--accent);color:var(--accent); }
+  .loading-overlay { position:absolute;inset:0;background:rgba(8,12,18,0.9);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;gap:14px; }
+  .loading-overlay.hidden { display:none; }
+  .loading-bar-wrap { width:200px;height:2px;background:var(--border); }
+  .loading-bar { height:100%;background:var(--accent);transition:width 0.3s; }
+  .loading-text { font-size:0.68rem;color:var(--text-dim);letter-spacing:0.15em; }
+  #fileInput { display:none; }
 </style>
 </head>
 <body>
-
 <header>
   <h1>NET<span>WORK</span></h1>
   <div class="stats">
-    <div><b id="stat-nodes">0</b> connections</div>
-    <div><b id="stat-edges">0</b> links</div>
-    <div><b id="stat-companies">0</b> companies</div>
+    <div><b id="stat-nodes">0</b> people</div>
+    <div><b id="stat-clusters">0</b> companies</div>
+    <div><b id="stat-links">0</b> links</div>
   </div>
-  <div style="display:flex;gap:10px;align-items:center">
+  <div style="display:flex;gap:8px;align-items:center">
     <button class="load-btn" onclick="document.getElementById('fileInput').click()">LOAD DATA</button>
     <input type="file" id="fileInput" accept=".json" onchange="loadFile(event)">
   </div>
 </header>
-
 <div class="main">
   <div class="sidebar">
     <div class="sidebar-section">
       <h3>Search</h3>
-      <input type="text" class="search-box" placeholder="name or company..." oninput="searchGraph(this.value)">
+      <input type="text" class="search-box" id="search" placeholder="name or company..." oninput="onSearch(this.value)">
     </div>
-    <div class="sidebar-section">
-      <h3>Physics</h3>
-      <div class="control-row">
-        <label>Repulsion <span id="val-charge">-120</span></label>
-        <input type="range" min="-600" max="-20" value="-120" oninput="updateForce('charge',this.value);document.getElementById('val-charge').textContent=this.value">
-      </div>
-      <div class="control-row">
-        <label>Link distance <span id="val-dist">60</span></label>
-        <input type="range" min="10" max="300" value="60" oninput="updateForce('distance',this.value);document.getElementById('val-dist').textContent=this.value">
-      </div>
-      <div class="control-row">
-        <label>Link strength <span id="val-strength">0.5</span></label>
-        <input type="range" min="0.01" max="2" step="0.01" value="0.5" oninput="updateForce('strength',this.value);document.getElementById('val-strength').textContent=parseFloat(this.value).toFixed(2)">
-      </div>
-    </div>
-    <div class="sidebar-section">
-      <h3>Top companies <span style="color:var(--text-dim);font-size:0.55rem">(click to highlight)</span></h3>
-      <div class="company-list" id="company-list"></div>
-    </div>
-    <div class="sidebar-section">
-      <h3>Min connections</h3>
-      <div class="control-row">
-        <label>Show nodes with ≥ <span id="val-mindeg">1</span> links</label>
-        <input type="range" min="1" max="20" value="1" oninput="updateMinDegree(+this.value)">
-      </div>
+    <div class="sidebar-section" style="flex:1;overflow-y:auto">
+      <h3>Companies <span style="color:var(--text-dim);font-size:0.52rem">click to zoom · dbl-click to expand</span></h3>
+      <div class="cluster-list" id="cluster-list"></div>
     </div>
   </div>
-
   <div class="canvas-wrap" id="canvas-wrap">
-    <div class="mock-notice" id="mock-notice">⚠ MOCK DATA — Load your own JSON to visualize your network</div>
+    <div class="mock-notice" id="mock-notice">⚠ MOCK DATA — Load your JSON to visualize your real network</div>
     <canvas id="graph"></canvas>
+    <div class="breadcrumb" id="breadcrumb" onclick="switchToClusterView()">← All Companies</div>
+    <div class="zoom-btns">
+      <button class="zoom-btn" onclick="zoomBy(1.35)">+</button>
+      <button class="zoom-btn" onclick="zoomBy(0.74)">−</button>
+      <button class="zoom-btn" onclick="resetView()" style="font-size:0.65rem;letter-spacing:-1px">FIT</button>
+    </div>
     <div class="loading-overlay hidden" id="loading-overlay">
       <div class="loading-text" id="loading-text">BUILDING GRAPH...</div>
-      <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar"></div></div>
+      <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar" style="width:0%"></div></div>
     </div>
+    <div class="hint" id="hint">SCROLL TO ZOOM · DRAG TO PAN · CLICK CLUSTER · DOUBLE-CLICK TO EXPAND</div>
     <div class="info-panel" id="info-panel">
       <button class="info-close" onclick="closeInfo()">✕</button>
       <h2 id="info-name"></h2>
-      <div class="role" id="info-role"></div>
-      <div class="companies" id="info-companies"></div>
-      <a id="info-link" href="#" target="_blank" style="font-size:0.6rem;color:var(--accent);display:block;margin-top:10px">View on LinkedIn ↗</a>
+      <div class="info-sub" id="info-sub"></div>
+      <div class="info-body" id="info-body"></div>
     </div>
     <div class="tooltip" id="tooltip"></div>
   </div>
 </div>
-
 <script>
-// ─── CONSTANTS ────────────────────────────────────────────────────────────────
-const PALETTE = [
-  "#00e5ff","#ff6b35","#7fff6b","#ff4fd8","#ffd700",
-  "#a78bfa","#34d399","#f87171","#60a5fa","#fb923c",
-  "#e879f9","#4ade80","#38bdf8","#facc15","#f472b6",
-  "#818cf8","#2dd4bf","#fb7185","#a3e635","#c084fc"
-];
+const PALETTE=["#00e5ff","#ff6b35","#7fff6b","#ff4fd8","#ffd700","#a78bfa","#34d399","#f87171","#60a5fa","#fb923c","#e879f9","#4ade80","#38bdf8","#facc15","#f472b6","#818cf8","#2dd4bf","#fb7185","#a3e635","#c084fc","#67e8f9","#fca5a5","#86efac","#fde68a","#c4b5fd","#6ee7b7","#93c5fd","#fdba74","#d946ef","#0ea5e9"];
+const MOCK={nodes:[
+  {id:"1",name:"Alice Chen",profileUrl:"",companies:["Google","Stripe","MIT"]},
+  {id:"2",name:"Ben Okafor",profileUrl:"",companies:["Stripe","PayPal","YC"]},
+  {id:"3",name:"Clara Voss",profileUrl:"",companies:["Google","DeepMind","MIT"]},
+  {id:"4",name:"David Kim",profileUrl:"",companies:["DeepMind","Google","OpenAI"]},
+  {id:"5",name:"Eva Martins",profileUrl:"",companies:["OpenAI","Anthropic","MIT"]},
+  {id:"6",name:"Frank Liu",profileUrl:"",companies:["Anthropic","OpenAI","Google"]},
+  {id:"7",name:"Gina Park",profileUrl:"",companies:["Meta","Instagram","Google"]},
+  {id:"8",name:"Hassan Ali",profileUrl:"",companies:["Meta","WhatsApp","YC"]},
+  {id:"9",name:"Iris Novak",profileUrl:"",companies:["Stripe","Brex","YC"]},
+  {id:"10",name:"James Torres",profileUrl:"",companies:["Brex","Stripe","PayPal"]},
+  {id:"11",name:"Keiko Sato",profileUrl:"",companies:["PayPal","Stripe","Visa"]},
+  {id:"12",name:"Leo Ferreira",profileUrl:"",companies:["Visa","PayPal","Mastercard"]},
+  {id:"13",name:"Maya Patel",profileUrl:"",companies:["Mastercard","Visa","Goldman"]},
+  {id:"14",name:"Noah Williams",profileUrl:"",companies:["Goldman","JPMorgan","Mastercard"]},
+  {id:"15",name:"Olivia Scott",profileUrl:"",companies:["JPMorgan","Goldman","Citi"]},
+  {id:"16",name:"Pedro Costa",profileUrl:"",companies:["Citi","JPMorgan","HSBC"]},
+  {id:"17",name:"Quinn Harper",profileUrl:"",companies:["HSBC","Citi","Barclays"]},
+  {id:"18",name:"Rachel Moore",profileUrl:"",companies:["Barclays","HSBC","Goldman"]},
+  {id:"19",name:"Sam Nguyen",profileUrl:"",companies:["YC","Airbnb","Stripe"]},
+  {id:"20",name:"Tara Singh",profileUrl:"",companies:["Airbnb","Uber","YC"]},
+  {id:"21",name:"Uma Krishnan",profileUrl:"",companies:["Uber","Lyft","Airbnb"]},
+  {id:"22",name:"Victor Blanc",profileUrl:"",companies:["Lyft","Uber","DoorDash"]},
+  {id:"23",name:"Wendy Zhang",profileUrl:"",companies:["DoorDash","Lyft","Instacart"]},
+  {id:"24",name:"Xander Brown",profileUrl:"",companies:["Instacart","DoorDash","Amazon"]},
+  {id:"25",name:"Yuki Tanaka",profileUrl:"",companies:["Amazon","AWS","Microsoft"]},
+  {id:"26",name:"Zara Ahmed",profileUrl:"",companies:["Microsoft","Amazon","LinkedIn"]},
+  {id:"27",name:"Adam Foster",profileUrl:"",companies:["LinkedIn","Microsoft","Google"]},
+  {id:"28",name:"Beth Holland",profileUrl:"",companies:["AWS","Amazon","Google"]},
+  {id:"29",name:"Carlos Reyes",profileUrl:"",companies:["OpenAI","Google","DeepMind"]},
+  {id:"30",name:"Dana White",profileUrl:"",companies:["Anthropic","MIT","OpenAI"]},
+]};
 
-const MAX_EDGES_PER_NODE = 8;   // cap edges per node to avoid hairball
-const MAX_TOTAL_EDGES = 15000;  // hard cap on total edges rendered
+// ── STATE ────────────────────────────────────────────────────────────────────
+let canvas,ctx,W,H;
+let tx=0,ty=0,tk=1;
+let isPanning=false,panStart=null,dragNode=null;
+let hoveredItem=null,searchQ='',mode='clusters',focusedCluster=null;
+let allNodes=[],clusterList=[],clusterMap={},clusterEdges=[],companyColors={};
+let visNodes=[],visEdges=[],sim=null;
 
-// ─── MOCK DATA ────────────────────────────────────────────────────────────────
-const MOCK_DATA = {
-  nodes: [
-    { id:"1",  name:"Alice Chen",    companies:["Google","Stripe","MIT Lab"] },
-    { id:"2",  name:"Ben Okafor",    companies:["Stripe","PayPal","YC"] },
-    { id:"3",  name:"Clara Voss",    companies:["Google","DeepMind","MIT Lab"] },
-    { id:"4",  name:"David Kim",     companies:["DeepMind","Google","OpenAI"] },
-    { id:"5",  name:"Eva Martins",   companies:["OpenAI","Anthropic","MIT Lab"] },
-    { id:"6",  name:"Frank Liu",     companies:["Anthropic","OpenAI","Google"] },
-    { id:"7",  name:"Gina Park",     companies:["Meta","Instagram","Google"] },
-    { id:"8",  name:"Hassan Ali",    companies:["Meta","WhatsApp","YC"] },
-    { id:"9",  name:"Iris Novak",    companies:["Stripe","Brex","YC"] },
-    { id:"10", name:"James Torres",  companies:["Brex","Stripe","PayPal"] },
-    { id:"11", name:"Keiko Sato",    companies:["PayPal","Stripe","Visa"] },
-    { id:"12", name:"Leo Ferreira",  companies:["Visa","PayPal","Mastercard"] },
-    { id:"13", name:"Maya Patel",    companies:["Mastercard","Visa","Goldman"] },
-    { id:"14", name:"Noah Williams", companies:["Goldman","JPMorgan","Mastercard"] },
-    { id:"15", name:"Olivia Scott",  companies:["JPMorgan","Goldman","Citi"] },
-    { id:"16", name:"Pedro Costa",   companies:["Citi","JPMorgan","HSBC"] },
-    { id:"17", name:"Quinn Harper",  companies:["HSBC","Citi","Barclays"] },
-    { id:"18", name:"Rachel Moore",  companies:["Barclays","HSBC","Goldman"] },
-    { id:"19", name:"Sam Nguyen",    companies:["YC","Airbnb","Stripe"] },
-    { id:"20", name:"Tara Singh",    companies:["Airbnb","Uber","YC"] },
-    { id:"21", name:"Uma Krishnan",  companies:["Uber","Lyft","Airbnb"] },
-    { id:"22", name:"Victor Blanc",  companies:["Lyft","Uber","DoorDash"] },
-    { id:"23", name:"Wendy Zhang",   companies:["DoorDash","Lyft","Instacart"] },
-    { id:"24", name:"Xander Brown",  companies:["Instacart","DoorDash","Amazon"] },
-    { id:"25", name:"Yuki Tanaka",   companies:["Amazon","AWS","Microsoft"] },
-    { id:"26", name:"Zara Ahmed",    companies:["Microsoft","Amazon","LinkedIn"] },
-    { id:"27", name:"Adam Foster",   companies:["LinkedIn","Microsoft","Google"] },
-    { id:"28", name:"Beth Holland",  companies:["AWS","Amazon","Google"] },
-    { id:"29", name:"Carlos Reyes",  companies:["OpenAI","Google","DeepMind"] },
-    { id:"30", name:"Dana White",    companies:["Anthropic","MIT Lab","OpenAI"] },
-  ]
-};
+// ── LOADING ──────────────────────────────────────────────────────────────────
+const $=id=>document.getElementById(id);
+function showLoad(t,p){$('loading-overlay').classList.remove('hidden');$('loading-text').textContent=t;$('loading-bar').style.width=p+'%';}
+function hideLoad(){$('loading-overlay').classList.add('hidden');}
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
-let graphData = null;
-let simulation = null;
-let companyColors = {};
-let highlightedCompany = null;
-let searchMatches = null;
-let hoveredNode = null;
-let minDegree = 1;
-let currentCharge = -120, currentDistance = 60, currentStrength = 0.5;
+// ── INIT ─────────────────────────────────────────────────────────────────────
+function init(data){
+  showLoad('INDEXING...',15);
+  setTimeout(()=>{
+    allNodes=data.nodes.map(d=>({...d}));
+    const cm={};
+    allNodes.forEach(n=>(n.companies||[]).forEach(c=>{if(!cm[c])cm[c]=[];cm[c].push(n);}));
+    clusterList=Object.entries(cm).sort((a,b)=>b[1].length-a[1].length)
+      .map(([name,members],i)=>({name,members,color:PALETTE[i%PALETTE.length],id:'c'+i,x:0,y:0}));
+    clusterMap={};
+    clusterList.forEach(c=>{clusterMap[c.name]=c;companyColors[c.name]=c.color;});
 
-// Canvas state
-let canvas, ctx, W, H;
-let transform = { x: 0, y: 0, k: 1 };
-let isPanning = false, panStart = null;
-
-// ─── FAST EDGE BUILDER ────────────────────────────────────────────────────────
-// Uses inverted index: company -> [nodes] instead of O(n²) comparison
-function buildEdges(nodes) {
-  // Build company -> node index
-  const companyIndex = {};
-  nodes.forEach(n => {
-    n.companies.forEach(c => {
-      if (!companyIndex[c]) companyIndex[c] = [];
-      companyIndex[c].push(n.id);
-    });
-  });
-
-  // Build edges using index — O(n * avg_companies) instead of O(n²)
-  const edgeMap = {};
-  const edgeCount = {};  // track per-node edge count for capping
-
-  nodes.forEach(n => {
-    edgeCount[n.id] = 0;
-  });
-
-  nodes.forEach(n => {
-    n.companies.forEach(company => {
-      const peers = companyIndex[company];
-      if (!peers) return;
-      for (const peerId of peers) {
-        if (peerId === n.id) continue;
-        if ((edgeCount[n.id] || 0) >= MAX_EDGES_PER_NODE) continue;
-        if ((edgeCount[peerId] || 0) >= MAX_EDGES_PER_NODE) continue;
-
-        const key = n.id < peerId ? `${n.id}||${peerId}` : `${peerId}||${n.id}`;
-        if (edgeMap[key]) {
-          if (!edgeMap[key].companies.includes(company)) edgeMap[key].companies.push(company);
-        } else {
-          edgeMap[key] = { source: n.id, target: peerId, companies: [company] };
-          edgeCount[n.id] = (edgeCount[n.id] || 0) + 1;
-          edgeCount[peerId] = (edgeCount[peerId] || 0) + 1;
+    showLoad('LINKING CLUSTERS...',40);
+    setTimeout(()=>{
+      const em={};
+      allNodes.forEach(n=>{
+        const cs=(n.companies||[]).filter(c=>clusterMap[c]);
+        for(let i=0;i<cs.length;i++)for(let j=i+1;j<cs.length;j++){
+          const a=cs[i]<cs[j]?cs[i]:cs[j],b=cs[i]<cs[j]?cs[j]:cs[i];
+          const k=a+'||'+b; em[k]=(em[k]||0)+1;
         }
+      });
+      clusterEdges=Object.entries(em).filter(([,w])=>w>=2)
+        .map(([k,w])=>{const[a,b]=k.split('||');return{source:a,target:b,weight:w};});
 
-        if (Object.keys(edgeMap).length >= MAX_TOTAL_EDGES) return;
-      }
-    });
-  });
+      $('stat-nodes').textContent=allNodes.length;
+      $('stat-clusters').textContent=clusterList.length;
+      $('stat-links').textContent=clusterEdges.length;
 
-  return Object.values(edgeMap).map(e => ({ ...e, weight: e.companies.length }));
-}
-
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-function showLoading(text, pct) {
-  const el = document.getElementById('loading-overlay');
-  el.classList.remove('hidden');
-  document.getElementById('loading-text').textContent = text;
-  document.getElementById('loading-bar').style.width = pct + '%';
-}
-function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
-
-function init(data) {
-  showLoading('PROCESSING NODES...', 10);
-
-  // Use setTimeout to let the loading UI paint before heavy work
-  setTimeout(() => {
-    const nodes = data.nodes.map(d => ({ ...d }));
-
-    showLoading('BUILDING CONNECTIONS...', 30);
-    setTimeout(() => {
-      const edges = buildEdges(nodes);
-
-      // Assign colors to top companies by frequency
-      const freq = {};
-      nodes.forEach(n => n.companies.forEach(c => freq[c] = (freq[c] || 0) + 1));
-      const topCompanies = Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0, 40).map(e => e[0]);
-      topCompanies.forEach((c, i) => companyColors[c] = PALETTE[i % PALETTE.length]);
-
-      // Degree map
-      const degreeMap = {};
-      nodes.forEach(n => degreeMap[n.id] = 0);
-      edges.forEach(e => { degreeMap[e.source]++; degreeMap[e.target]++; });
-      nodes.forEach(n => n._degree = degreeMap[n.id] || 0);
-
-      // Node id -> node map
-      const nodeMap = {};
-      nodes.forEach(n => nodeMap[n.id] = n);
-
-      graphData = { nodes, edges, nodeMap, degreeMap };
-
-      // Stats
-      document.getElementById('stat-nodes').textContent = nodes.length;
-      document.getElementById('stat-edges').textContent = edges.length;
-      document.getElementById('stat-companies').textContent = topCompanies.length;
-
-      // Company filter list (top 20 by frequency)
-      const list = document.getElementById('company-list');
-      list.innerHTML = '';
-      topCompanies.slice(0, 20).forEach(c => {
-        const count = freq[c];
-        const color = companyColors[c] || '#888';
-        const item = document.createElement('div');
-        item.className = 'company-item active';
-        item.dataset.company = c;
-        item.innerHTML = `<div class="company-dot" style="background:${color}"></div><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c}</span><span style="color:var(--accent);margin-left:4px">${count}</span>`;
-        item.onclick = () => toggleCompanyHighlight(c, item);
-        list.appendChild(item);
+      // Sidebar
+      const list=$('cluster-list'); list.innerHTML='';
+      clusterList.slice(0,60).forEach(c=>{
+        const el=document.createElement('div');
+        el.className='cluster-item'; el.id='ci_'+c.name;
+        el.innerHTML=`<div class="cluster-dot" style="background:${c.color}"></div><span class="cluster-name">${c.name}</span><span class="cluster-count">${c.members.length}</span>`;
+        el.onclick=()=>focusCluster(c.name);
+        el.ondblclick=()=>switchToNodeView(c.name);
+        list.appendChild(el);
       });
 
-      showLoading('STARTING SIMULATION...', 60);
-      setTimeout(() => {
-        setupCanvas();
-        runSimulation(nodes, edges);
-      }, 50);
-    }, 50);
-  }, 50);
+      showLoad('SIMULATING...',65);
+      setTimeout(()=>{setupCanvas();switchToClusterView();},30);
+    },30);
+  },30);
 }
 
-// ─── CANVAS SETUP ─────────────────────────────────────────────────────────────
-function setupCanvas() {
-  const wrap = document.getElementById('canvas-wrap');
-  canvas = document.getElementById('graph');
-  W = wrap.clientWidth;
-  H = wrap.clientHeight;
-  canvas.width = W;
-  canvas.height = H;
-  ctx = canvas.getContext('2d');
+// ── CLUSTER VIEW ─────────────────────────────────────────────────────────────
+function switchToClusterView(){
+  mode='clusters'; focusedCluster=null;
+  $('breadcrumb').style.display='none';
+  $('hint').textContent='SCROLL TO ZOOM  ·  DRAG TO PAN  ·  CLICK = INFO  ·  DOUBLE-CLICK = EXPAND CLUSTER';
+  document.querySelectorAll('.cluster-item').forEach(el=>el.classList.remove('active'));
 
-  // Center transform
-  transform = { x: W / 2, y: H / 2, k: 1 };
+  const sn=clusterList.map(c=>({id:c.name,_c:c,x:c.x||(Math.random()-.5)*500,y:c.y||(Math.random()-.5)*500,r:Math.max(14,Math.sqrt(c.members.length)*5.5)}));
+  const se=clusterEdges.map(e=>({...e}));
+  visNodes=sn; visEdges=se;
 
-  // Mouse events
-  canvas.addEventListener('mousedown', onMouseDown);
-  canvas.addEventListener('mousemove', onMouseMove);
-  canvas.addEventListener('mouseup', onMouseUp);
-  canvas.addEventListener('wheel', onWheel, { passive: false });
-  canvas.addEventListener('click', onCanvasClick);
+  if(sim)sim.stop();
+  sim=d3.forceSimulation(sn)
+    .force('link',d3.forceLink(se).id(d=>d.id).distance(d=>80+d.weight*.4).strength(.35))
+    .force('charge',d3.forceManyBody().strength(d=>-Math.pow(d.r,1.9)).distanceMax(600))
+    .force('center',d3.forceCenter(0,0))
+    .force('collide',d3.forceCollide(d=>d.r+10))
+    .alphaDecay(.022)
+    .on('tick',draw)
+    .on('end',()=>{hideLoad();draw();});
 
-  window.addEventListener('resize', onResize);
+  resetView();
 }
 
-function onResize() {
-  const wrap = document.getElementById('canvas-wrap');
-  W = wrap.clientWidth;
-  H = wrap.clientHeight;
-  canvas.width = W;
-  canvas.height = H;
-  draw();
-}
+// ── NODE VIEW ────────────────────────────────────────────────────────────────
+function switchToNodeView(cname){
+  const cluster=clusterMap[cname]; if(!cluster)return;
+  mode='nodes'; focusedCluster=cname;
+  $('breadcrumb').style.display='block';
+  $('breadcrumb').textContent='← '+cname;
+  $('hint').textContent='VIEWING: '+cname.toUpperCase()+'  ·  PRESS ESC OR CLICK ← TO GO BACK';
+  closeInfo();
 
-// ─── SIMULATION ───────────────────────────────────────────────────────────────
-function runSimulation(nodes, edges) {
-  if (simulation) simulation.stop();
+  document.querySelectorAll('.cluster-item').forEach(el=>el.classList.remove('active'));
+  const sbi=$('ci_'+cname);
+  if(sbi){sbi.classList.add('active');sbi.scrollIntoView({block:'nearest'});}
 
-  simulation = d3.forceSimulation(nodes)
-    .force('link', d3.forceLink(edges).id(d => d.id).distance(currentDistance).strength(currentStrength))
-    .force('charge', d3.forceManyBody().strength(currentCharge).distanceMax(300))
-    .force('center', d3.forceCenter(0, 0))
-    .force('collide', d3.forceCollide(12))
-    .alphaDecay(0.03)
-    .on('tick', () => {
-      draw();
-    })
-    .on('end', () => {
-      hideLoading();
-      draw();
+  const members=cluster.members;
+  const memberSet=new Set(members.map(n=>n.id));
+  const ccm={};
+  members.forEach(n=>(n.companies||[]).forEach(c=>{if(!ccm[c])ccm[c]=[];ccm[c].push(n.id);}));
+  const em={};
+  members.forEach(n=>(n.companies||[]).forEach(c=>{
+    (ccm[c]||[]).forEach(pid=>{
+      if(pid===n.id)return;
+      const k=n.id<pid?n.id+'||'+pid:pid+'||'+n.id;
+      if(!em[k])em[k]={source:n.id,target:pid,companies:[c]};
+      else if(!em[k].companies.includes(c))em[k].companies.push(c);
     });
+  }));
 
-  // Update loading bar during simulation warmup
-  let ticks = 0;
-  const origTick = simulation.on('tick');
-  simulation.on('tick', () => {
-    ticks++;
-    if (ticks < 100) {
-      showLoading('SIMULATING PHYSICS...', 60 + ticks * 0.4);
-    } else {
-      hideLoading();
-    }
-    draw();
-  });
+  visNodes=members.map(n=>({...n,x:(Math.random()-.5)*300,y:(Math.random()-.5)*300}));
+  visEdges=Object.values(em).map(e=>({...e,weight:e.companies.length}));
+
+  if(sim)sim.stop();
+  sim=d3.forceSimulation(visNodes)
+    .force('link',d3.forceLink(visEdges).id(d=>d.id).distance(55).strength(.5))
+    .force('charge',d3.forceManyBody().strength(-130).distanceMax(300))
+    .force('center',d3.forceCenter(0,0))
+    .force('collide',d3.forceCollide(13))
+    .alphaDecay(.03)
+    .on('tick',draw).on('end',draw);
+
+  resetView(); draw();
 }
 
-// ─── DRAW ─────────────────────────────────────────────────────────────────────
-function draw() {
-  if (!ctx || !graphData) return;
-  ctx.clearRect(0, 0, W, H);
+// ── CANVAS ───────────────────────────────────────────────────────────────────
+function setupCanvas(){
+  const wrap=$('canvas-wrap');
+  canvas=$('graph'); W=wrap.clientWidth; H=wrap.clientHeight;
+  canvas.width=W; canvas.height=H; ctx=canvas.getContext('2d');
+  tx=W/2; ty=H/2; tk=1;
 
-  ctx.save();
-  ctx.translate(transform.x, transform.y);
-  ctx.scale(transform.k, transform.k);
+  canvas.addEventListener('mousedown',onMD);
+  canvas.addEventListener('mousemove',onMM);
+  canvas.addEventListener('mouseup',onMU);
+  canvas.addEventListener('wheel',onWheel,{passive:false});
+  canvas.addEventListener('click',onCK);
+  canvas.addEventListener('dblclick',onDbl);
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&mode==='nodes')switchToClusterView();});
+  window.addEventListener('resize',()=>{const w=$('canvas-wrap');W=w.clientWidth;H=w.clientHeight;canvas.width=W;canvas.height=H;draw();});
+}
 
-  const nodes = graphData.nodes;
-  const edges = graphData.edges;
-
-  const activeNodes = minDegree > 1
-    ? new Set(nodes.filter(n => n._degree >= minDegree).map(n => n.id))
-    : null;
-
-  // Draw edges
-  ctx.globalAlpha = highlightedCompany || searchMatches ? 0.04 : 0.18;
-  edges.forEach(e => {
-    const s = e.source, t = e.target;
-    if (!s.x || !t.x) return;
-    if (activeNodes && (!activeNodes.has(s.id) || !activeNodes.has(t.id))) return;
-
-    const isHighlighted = highlightedCompany
-      ? e.companies.includes(highlightedCompany)
-      : searchMatches
-        ? (searchMatches.has(s.id) && searchMatches.has(t.id))
-        : true;
-
-    if (isHighlighted) {
-      ctx.globalAlpha = 0.55;
-      const company = e.companies[0];
-      ctx.strokeStyle = companyColors[company] || '#00e5ff';
-      ctx.lineWidth = 0.5 + e.weight * 0.3;
-      ctx.beginPath();
-      ctx.moveTo(s.x, s.y);
-      ctx.lineTo(t.x, t.y);
-      ctx.stroke();
-      ctx.globalAlpha = 0.04;
-    } else {
-      ctx.strokeStyle = '#1a2a3a';
-      ctx.lineWidth = 0.5;
-      ctx.beginPath();
-      ctx.moveTo(s.x, s.y);
-      ctx.lineTo(t.x, t.y);
-      ctx.stroke();
-    }
-  });
-
-  // Draw hovered node edges (on top, bright)
-  if (hoveredNode) {
-    ctx.globalAlpha = 0.85;
-    edges.forEach(e => {
-      const s = e.source, t = e.target;
-      if (!s.x || !t.x) return;
-      if (s.id === hoveredNode.id || t.id === hoveredNode.id) {
-        ctx.strokeStyle = companyColors[e.companies[0]] || '#00e5ff';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y);
-        ctx.lineTo(t.x, t.y);
-        ctx.stroke();
-      }
-    });
-  }
-
-  // Draw nodes
-  ctx.globalAlpha = 1;
-  nodes.forEach(n => {
-    if (!n.x) return;
-    if (activeNodes && !activeNodes.has(n.id)) return;
-
-    const r = 3 + Math.sqrt(n._degree || 0) * 2;
-    const color = companyColors[n.companies[0]] || '#888';
-
-    const isDimmed = (searchMatches && !searchMatches.has(n.id)) ||
-                     (highlightedCompany && !n.companies.includes(highlightedCompany));
-    const isHovered = hoveredNode && hoveredNode.id === n.id;
-
-    ctx.globalAlpha = isDimmed ? 0.1 : (isHovered ? 1 : 0.85);
-
-    // Node circle
-    ctx.beginPath();
-    ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = color + '33';
-    ctx.fill();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = isHovered ? 2.5 : 1.2;
-    ctx.stroke();
-
-    // Glow for hovered
-    if (isHovered) {
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, r + 4, 0, Math.PI * 2);
-      ctx.strokeStyle = color + '55';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    }
-
-    // Labels — show if hovered, searched, highlighted, or high-degree
-    const showLabel = isHovered ||
-      (searchMatches && searchMatches.has(n.id)) ||
-      (highlightedCompany && n.companies.includes(highlightedCompany)) ||
-      (transform.k > 2 && !isDimmed) ||
-      (n._degree > 10 && !isDimmed);
-
-    if (showLabel) {
-      ctx.globalAlpha = isDimmed ? 0 : 1;
-      ctx.font = `${Math.max(9, 10 / transform.k)}px DM Mono`;
-      ctx.fillStyle = color;
-      ctx.fillText(n.name.split(' ')[0], n.x + r + 3, n.y + 4);
-    }
-  });
-
+// ── DRAW ─────────────────────────────────────────────────────────────────────
+function draw(){
+  if(!ctx)return;
+  ctx.clearRect(0,0,W,H);
+  ctx.save(); ctx.translate(tx,ty); ctx.scale(tk,tk);
+  mode==='clusters'?drawClusters():drawNodes();
   ctx.restore();
 }
 
-// ─── MOUSE INTERACTION ────────────────────────────────────────────────────────
-function screenToGraph(sx, sy) {
-  return {
-    x: (sx - transform.x) / transform.k,
-    y: (sy - transform.y) / transform.k
-  };
+function drawClusters(){
+  const sq=searchQ.length>0;
+  // Edges
+  visEdges.forEach(e=>{
+    const s=e.source._c?e.source:visNodes.find(n=>n.id===e.source);
+    const t=e.target._c?e.target:visNodes.find(n=>n.id===e.target);
+    if(!s||!t||s.x==null)return;
+    ctx.globalAlpha=sq?.04:.12;
+    ctx.strokeStyle=companyColors[s.id]||'#00e5ff';
+    ctx.lineWidth=Math.log(e.weight+1)*.9;
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(t.x,t.y);ctx.stroke();
+  });
+  // Nodes
+  visNodes.forEach(n=>{
+    if(n.x==null)return;
+    const c=n._c, color=c.color, r=n.r;
+    const hov=hoveredItem&&hoveredItem.id===n.id;
+    const name=n.id;
+    const match=!sq||(name.toLowerCase().includes(searchQ)||c.members.some(m=>m.name.toLowerCase().includes(searchQ)));
+    ctx.globalAlpha=match?(hov?1:.85):.06;
+    if(hov){ctx.beginPath();ctx.arc(n.x,n.y,r+7,0,Math.PI*2);ctx.strokeStyle=color+'55';ctx.lineWidth=5;ctx.stroke();}
+    ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);ctx.fillStyle=color+'1e';ctx.fill();
+    ctx.strokeStyle=color;ctx.lineWidth=hov?2.8:1.6;ctx.stroke();
+    if(match){
+      ctx.globalAlpha=.9;
+      const fs=Math.max(8,Math.min(12,r*.52));
+      ctx.font=fs+'px DM Mono';ctx.fillStyle=color;ctx.textAlign='center';
+      ctx.fillText(name.length>16?name.slice(0,14)+'…':name,n.x,n.y+r+fs+3);
+      if(r>16){ctx.font='bold '+Math.max(8,r*.42)+'px DM Mono';ctx.fillStyle=color+'cc';ctx.fillText(c.members.length,n.x,n.y+r*.2);}
+    }
+    ctx.textAlign='left';
+  });
 }
 
-function getNodeAt(sx, sy) {
-  if (!graphData) return null;
-  const gp = screenToGraph(sx, sy);
-  let closest = null, closestDist = Infinity;
-  const minDegFilter = minDegree > 1 ? new Set(graphData.nodes.filter(n => n._degree >= minDegree).map(n => n.id)) : null;
-  graphData.nodes.forEach(n => {
-    if (!n.x) return;
-    if (minDegFilter && !minDegFilter.has(n.id)) return;
-    const r = 3 + Math.sqrt(n._degree || 0) * 2;
-    const dx = gp.x - n.x, dy = gp.y - n.y;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist < r + 4 && dist < closestDist) {
-      closestDist = dist;
-      closest = n;
+function drawNodes(){
+  const sq=searchQ.length>0;
+  const cc=companyColors[focusedCluster]||'#00e5ff';
+  visEdges.forEach(e=>{
+    const s=typeof e.source==='object'?e.source:visNodes.find(n=>n.id===e.source);
+    const t=typeof e.target==='object'?e.target:visNodes.find(n=>n.id===e.target);
+    if(!s||!t||s.x==null)return;
+    const hov=hoveredItem&&(s.id===hoveredItem.id||t.id===hoveredItem.id);
+    ctx.globalAlpha=hov?.8:(sq?.04:.18);
+    ctx.strokeStyle=companyColors[(e.companies||[])[0]]||cc;
+    ctx.lineWidth=.7+e.weight*.35;
+    ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(t.x,t.y);ctx.stroke();
+  });
+  visNodes.forEach(n=>{
+    if(n.x==null)return;
+    const color=companyColors[(n.companies||[])[0]]||cc;
+    const hov=hoveredItem&&hoveredItem.id===n.id;
+    const match=!sq||n.name.toLowerCase().includes(searchQ)||(n.companies||[]).some(c=>c.toLowerCase().includes(searchQ));
+    ctx.globalAlpha=match?(hov?1:.88):.07;
+    if(hov){ctx.beginPath();ctx.arc(n.x,n.y,10,0,Math.PI*2);ctx.strokeStyle=color+'55';ctx.lineWidth=5;ctx.stroke();}
+    ctx.beginPath();ctx.arc(n.x,n.y,5,0,Math.PI*2);ctx.fillStyle=color+'33';ctx.fill();
+    ctx.strokeStyle=color;ctx.lineWidth=hov?2.5:1.3;ctx.stroke();
+    if(hov||match){
+      ctx.globalAlpha=match?.95:.2;
+      ctx.font='10px DM Mono';ctx.fillStyle=color;
+      ctx.fillText(n.name,n.x+8,n.y+4);
     }
   });
-  return closest;
 }
 
-let dragNode = null;
-function onMouseDown(e) {
-  const node = getNodeAt(e.offsetX, e.offsetY);
-  if (node) {
-    dragNode = node;
-    node.fx = node.x; node.fy = node.y;
-    if (simulation) simulation.alphaTarget(0.1).restart();
-  } else {
-    isPanning = true;
-    panStart = { x: e.offsetX - transform.x, y: e.offsetY - transform.y };
-    canvas.classList.add('grabbing');
-  }
+// ── HIT TEST ─────────────────────────────────────────────────────────────────
+function s2g(sx,sy){return{x:(sx-tx)/tk,y:(sy-ty)/tk};}
+function hitTest(sx,sy){
+  const gp=s2g(sx,sy); let best=null,bd=Infinity;
+  visNodes.forEach(n=>{
+    if(n.x==null)return;
+    const r=mode==='clusters'?(n.r+6):10;
+    const d=Math.hypot(gp.x-n.x,gp.y-n.y);
+    if(d<r&&d<bd){bd=d;best=n;}
+  });
+  return best;
 }
 
-function onMouseMove(e) {
-  if (dragNode) {
-    const gp = screenToGraph(e.offsetX, e.offsetY);
-    dragNode.fx = gp.x; dragNode.fy = gp.y;
-    return;
-  }
-  if (isPanning) {
-    transform.x = e.offsetX - panStart.x;
-    transform.y = e.offsetY - panStart.y;
-    draw();
-    return;
-  }
-  // Hover
-  const node = getNodeAt(e.offsetX, e.offsetY);
-  if (node !== hoveredNode) {
-    hoveredNode = node;
-    draw();
-    const tip = document.getElementById('tooltip');
-    if (node) {
-      tip.textContent = node.name + (node.companies[0] ? ' · ' + node.companies[0] : '');
-      tip.style.display = 'block';
-      tip.style.left = (e.pageX + 14) + 'px';
-      tip.style.top = (e.pageY - 10) + 'px';
-    } else {
-      tip.style.display = 'none';
-    }
-  } else if (node) {
-    const tip = document.getElementById('tooltip');
-    tip.style.left = (e.pageX + 14) + 'px';
-    tip.style.top = (e.pageY - 10) + 'px';
-  }
+// ── MOUSE ────────────────────────────────────────────────────────────────────
+function onMD(e){
+  const item=hitTest(e.offsetX,e.offsetY);
+  if(item&&mode==='nodes'){dragNode=item;item.fx=item.x;item.fy=item.y;if(sim)sim.alphaTarget(.1).restart();}
+  else{isPanning=true;panStart={x:e.offsetX-tx,y:e.offsetY-ty};canvas.classList.add('grabbing');}
 }
-
-function onMouseUp(e) {
-  if (dragNode) {
-    dragNode.fx = null; dragNode.fy = null;
-    dragNode = null;
-    if (simulation) simulation.alphaTarget(0);
+function onMM(e){
+  if(dragNode){const g=s2g(e.offsetX,e.offsetY);dragNode.fx=g.x;dragNode.fy=g.y;return;}
+  if(isPanning){tx=e.offsetX-panStart.x;ty=e.offsetY-panStart.y;draw();return;}
+  const item=hitTest(e.offsetX,e.offsetY);
+  const tip=$('tooltip');
+  if(item!==hoveredItem){
+    hoveredItem=item;draw();
+    canvas.className=item?'pointer':'';
+    if(item){
+      tip.textContent=mode==='clusters'
+        ?(item.id+' · '+item._c.members.length+' people')
+        :(item.name+(item.companies&&item.companies[0]?' · '+item.companies[0]:''));
+      tip.style.display='block';
+    }else tip.style.display='none';
   }
-  isPanning = false;
-  canvas.classList.remove('grabbing');
+  if(item){tip.style.left=(e.pageX+14)+'px';tip.style.top=(e.pageY-10)+'px';}
 }
-
-function onCanvasClick(e) {
-  const node = getNodeAt(e.offsetX, e.offsetY);
-  if (node) showNodeInfo(node);
-  else closeInfo();
+function onMU(){
+  if(dragNode){dragNode.fx=null;dragNode.fy=null;dragNode=null;if(sim)sim.alphaTarget(0);}
+  isPanning=false;canvas.classList.remove('grabbing');
 }
-
-function onWheel(e) {
+function onCK(e){
+  const item=hitTest(e.offsetX,e.offsetY);
+  if(!item){closeInfo();return;}
+  mode==='clusters'?showClusterInfo(item._c):showNodeInfo(item);
+}
+function onDbl(e){
+  const item=hitTest(e.offsetX,e.offsetY);
+  if(item&&mode==='clusters')switchToNodeView(item.id);
+  else if(!item&&mode==='nodes')switchToClusterView();
+}
+function onWheel(e){
   e.preventDefault();
-  const scale = e.deltaY < 0 ? 1.12 : 0.88;
-  const newK = Math.max(0.05, Math.min(12, transform.k * scale));
-  // Zoom toward mouse position
-  const mx = e.offsetX, my = e.offsetY;
-  transform.x = mx - (mx - transform.x) * (newK / transform.k);
-  transform.y = my - (my - transform.y) * (newK / transform.k);
-  transform.k = newK;
-  draw();
+  const f=e.deltaY<0?1.13:.885;
+  const nk=Math.max(.04,Math.min(20,tk*f));
+  tx=e.offsetX-(e.offsetX-tx)*(nk/tk);
+  ty=e.offsetY-(e.offsetY-ty)*(nk/tk);
+  tk=nk; draw();
 }
 
-// ─── NODE INFO PANEL ─────────────────────────────────────────────────────────
-function showNodeInfo(d) {
-  document.getElementById('info-name').textContent = d.name;
-  document.getElementById('info-role').textContent = d.companies[0] || '';
-  document.getElementById('info-link').href = d.profileUrl || '#';
+// ── ZOOM CONTROLS ────────────────────────────────────────────────────────────
+function zoomBy(f){
+  const nk=Math.max(.04,Math.min(20,tk*f));
+  tx=W/2-(W/2-tx)*(nk/tk); ty=H/2-(H/2-ty)*(nk/tk); tk=nk; draw();
+}
+function resetView(){tx=W/2;ty=H/2;tk=.85;draw();}
 
-  const sharedWith = [];
-  graphData.edges.forEach(e => {
-    const s = e.source, t = e.target;
-    const sid = typeof s === 'object' ? s.id : s;
-    const tid = typeof t === 'object' ? t.id : t;
-    if (sid === d.id || tid === d.id) {
-      const otherId = sid === d.id ? tid : sid;
-      const other = graphData.nodeMap[otherId];
-      if (other) sharedWith.push(`<b>${other.name}</b> · ${e.companies.join(', ')}`);
+function focusCluster(name){
+  document.querySelectorAll('.cluster-item').forEach(el=>el.classList.remove('active'));
+  const el=$('ci_'+name); if(el){el.classList.add('active');el.scrollIntoView({block:'nearest'});}
+  if(mode==='clusters'){
+    const cn=visNodes.find(n=>n.id===name);
+    if(cn&&cn.x!=null){
+      const targetK=Math.min(W,H)*0.0028;
+      animTo(cn.x,cn.y,targetK);
     }
-  });
-
-  document.getElementById('info-companies').innerHTML =
-    `<div style="margin-bottom:8px">Companies:<br>${d.companies.map(c => `<b style="color:${companyColors[c]||'#888'}">${c}</b>`).join(', ')}</div>` +
-    `<div style="color:var(--text-dim)">Connections: <b style="color:var(--text)">${d._degree}</b></div>` +
-    (sharedWith.length ? `<div style="margin-top:8px;color:var(--text-dim)">Shared employers:<br>${sharedWith.slice(0,6).join('<br>')}</div>` : '');
-
-  document.getElementById('info-panel').classList.add('visible');
-}
-
-function closeInfo() { document.getElementById('info-panel').classList.remove('visible'); }
-
-// ─── CONTROLS ────────────────────────────────────────────────────────────────
-function updateForce(type, val) {
-  if (!simulation) return;
-  if (type === 'charge') { currentCharge = +val; simulation.force('charge').strength(+val); }
-  if (type === 'distance') { currentDistance = +val; simulation.force('link').distance(+val); }
-  if (type === 'strength') { currentStrength = +val; simulation.force('link').strength(+val); }
-  simulation.alpha(0.2).restart();
-}
-
-function updateMinDegree(val) {
-  minDegree = val;
-  document.getElementById('val-mindeg').textContent = val;
-  draw();
-}
-
-function toggleCompanyHighlight(company, el) {
-  if (highlightedCompany === company) {
-    highlightedCompany = null;
-    document.querySelectorAll('.company-item').forEach(i => i.style.opacity = '1');
-  } else {
-    highlightedCompany = company;
-    document.querySelectorAll('.company-item').forEach(i => {
-      i.style.opacity = i.dataset.company === company ? '1' : '0.35';
-    });
   }
-  draw();
+}
+function animTo(gx,gy,targetK){
+  const sx=tx,sy=ty,sk=tk,dur=500,t0=performance.now();
+  const ex=W/2-gx*targetK,ey=H/2-gy*targetK;
+  (function step(now){
+    const p=Math.min(1,(now-t0)/dur),e=p<.5?2*p*p:-1+(4-2*p)*p;
+    tk=sk+(targetK-sk)*e; tx=sx+(ex-sx)*e; ty=sy+(ey-sy)*e; draw();
+    if(p<1)requestAnimationFrame(step);
+  })(performance.now());
 }
 
-function searchGraph(query) {
-  if (!graphData) return;
-  if (!query) { searchMatches = null; draw(); return; }
-  const q = query.toLowerCase();
-  searchMatches = new Set();
-  graphData.nodes.forEach(n => {
-    if (n.name.toLowerCase().includes(q) || n.companies.some(c => c.toLowerCase().includes(q)))
-      searchMatches.add(n.id);
-  });
-  draw();
+// ── INFO PANELS ──────────────────────────────────────────────────────────────
+function showClusterInfo(c){
+  $('info-name').textContent=c.name;
+  $('info-sub').textContent=c.members.length+' of your connections worked here';
+  const names=c.members.slice(0,10).map(m=>`<span style="color:${companyColors[(m.companies||[])[0]]||'#888'}">${m.name}</span>`).join(', ');
+  $('info-body').innerHTML=`<div style="margin-bottom:10px">${names}${c.members.length>10?` <span style="color:var(--text-dim)">+${c.members.length-10} more</span>`:''}</div>`+
+    `<button class="load-btn" style="font-size:0.6rem;padding:4px 10px" onclick="switchToNodeView('${c.name.replace(/'/g,"\\'")}')">EXPAND →</button>`;
+  $('info-panel').classList.add('visible');
 }
-
-// ─── FILE LOAD ────────────────────────────────────────────────────────────────
-function loadFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      document.getElementById('mock-notice').style.display = 'none';
-      companyColors = {};
-      highlightedCompany = null;
-      searchMatches = null;
-      hoveredNode = null;
-      if (simulation) { simulation.stop(); simulation = null; }
-      init(data);
-    } catch(err) {
-      alert('Invalid JSON file.');
+function showNodeInfo(n){
+  $('info-name').textContent=n.name;
+  $('info-sub').textContent=(n.companies||[]).join(' · ')||'No company data';
+  const link=n.profileUrl?`<a href="${n.profileUrl}" target="_blank" style="color:var(--accent);display:block;margin-bottom:8px">View on LinkedIn ↗</a>`:'';
+  const conn=[];
+  visEdges.forEach(e=>{
+    const sid=typeof e.source==='object'?e.source.id:e.source;
+    const tid=typeof e.target==='object'?e.target.id:e.target;
+    if(sid===n.id||tid===n.id){
+      const oid=sid===n.id?tid:sid;
+      const o=visNodes.find(x=>x.id===oid);
+      if(o)conn.push(`<b style="color:var(--text)">${o.name}</b> <span style="color:var(--text-dim)">via ${(e.companies||[]).join(', ')}</span>`);
     }
+  });
+  $('info-body').innerHTML=link+(conn.length?conn.slice(0,7).join('<br>'):'<span style="color:var(--text-dim)">No shared employers in this cluster</span>');
+  $('info-panel').classList.add('visible');
+}
+function closeInfo(){$('info-panel').classList.remove('visible');}
+
+// ── SEARCH ───────────────────────────────────────────────────────────────────
+function onSearch(q){searchQ=q.toLowerCase().trim();draw();}
+
+// ── FILE LOAD ────────────────────────────────────────────────────────────────
+function loadFile(e){
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      $('mock-notice').style.display='none';
+      if(sim){sim.stop();sim=null;}
+      allNodes=[];clusterList=[];clusterMap={};clusterEdges=[];companyColors={};
+      hoveredItem=null;searchQ='';$('search').value='';
+      init(data);
+    }catch{alert('Invalid JSON file.');}
   };
-  reader.readAsText(file);
+  r.readAsText(f);
 }
 
-// ─── BOOT ─────────────────────────────────────────────────────────────────────
-window.addEventListener('load', () => init(MOCK_DATA));
-window.addEventListener('resize', () => {
-  if (canvas) onResize();
-});
+window.addEventListener('load',()=>init(MOCK));
 </script>
 </body>
 </html>
