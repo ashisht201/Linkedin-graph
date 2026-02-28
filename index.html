@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Graph</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080c12;
+    --panel: #0d1520;
+    --border: #1a2a3a;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --accent3: #7fff6b;
+    --text: #c8d8e8;
+    --text-dim: #4a6a8a;
+    --node-stroke: #1a2a3a;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+    color: #fff;
+  }
+
+  header h1 span { color: var(--accent); }
+
+  .stats {
+    display: flex;
+    gap: 24px;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+  }
+
+  .stats b { color: var(--accent); font-weight: 500; }
+
+  .load-btn {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 6px 14px;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    transition: all 0.2s;
+  }
+  .load-btn:hover { background: var(--accent); color: var(--bg); }
+
+  /* Main layout */
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-section h3 {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .control-row {
+    margin-bottom: 12px;
+  }
+
+  .control-row label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+  }
+
+  .control-row label span { color: var(--text); }
+
+  input[type=range] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 2px;
+    background: var(--border);
+    outline: none;
+    border-radius: 2px;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .search-box {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--text-dim); }
+
+  .company-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .company-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.65rem;
+    cursor: pointer;
+    color: var(--text-dim);
+    transition: color 0.15s;
+  }
+  .company-item:hover { color: var(--text); }
+  .company-item.active { color: var(--text); }
+
+  .company-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Canvas area */
+  .canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  svg {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+  svg:active { cursor: grabbing; }
+
+  .node circle {
+    transition: r 0.2s;
+  }
+
+  .node text {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    fill: var(--text);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .node.labeled text, .node.hovered text { opacity: 1; }
+
+  .link {
+    stroke-opacity: 0.25;
+    transition: stroke-opacity 0.2s;
+  }
+  .link.highlighted { stroke-opacity: 0.9; }
+
+  /* Info panel */
+  .info-panel {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 260px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 16px;
+    display: none;
+    z-index: 5;
+  }
+
+  .info-panel.visible { display: block; }
+
+  .info-panel h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .info-panel .role {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .info-panel .companies {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    line-height: 1.8;
+  }
+
+  .info-panel .companies b {
+    color: var(--text);
+    font-weight: 400;
+  }
+
+  .info-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .info-close:hover { color: var(--text); }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    font-size: 0.65rem;
+    color: var(--accent);
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+    white-space: nowrap;
+  }
+
+  /* Legend */
+  .legend {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    z-index: 5;
+  }
+
+  .legend h4 {
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: var(--text-dim);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+
+  .legend-line {
+    width: 24px;
+    height: 2px;
+  }
+
+  /* File input hidden */
+  #fileInput { display: none; }
+
+  /* Dim state */
+  .node.dimmed circle { opacity: 0.08; }
+  .node.dimmed text { opacity: 0; }
+  .link.dimmed { stroke-opacity: 0.03; }
+
+  /* Mock data notice */
+  .mock-notice {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,107,53,0.1);
+    border: 1px solid var(--accent2);
+    color: var(--accent2);
+    font-size: 0.6rem;
+    padding: 5px 14px;
+    letter-spacing: 0.1em;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>NET<span>WORK</span></h1>
+  <div class="stats">
+    <div><b id="stat-nodes">0</b> connections</div>
+    <div><b id="stat-edges">0</b> shared employers</div>
+    <div><b id="stat-companies">0</b> companies</div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <button class="load-btn" onclick="document.getElementById('fileInput').click()">LOAD DATA</button>
+    <input type="file" id="fileInput" accept=".json" onchange="loadFile(event)">
+  </div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+
+    <div class="sidebar-section">
+      <h3>Search</h3>
+      <input type="text" class="search-box" placeholder="name or company..." oninput="searchGraph(this.value)">
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Physics</h3>
+      <div class="control-row">
+        <label>Repulsion <span id="val-charge">-300</span></label>
+        <input type="range" min="-800" max="-50" value="-300" oninput="updateForce('charge', this.value); document.getElementById('val-charge').textContent=this.value">
+      </div>
+      <div class="control-row">
+        <label>Link distance <span id="val-dist">80</span></label>
+        <input type="range" min="20" max="300" value="80" oninput="updateForce('distance', this.value); document.getElementById('val-dist').textContent=this.value">
+      </div>
+      <div class="control-row">
+        <label>Link strength <span id="val-strength">0.3</span></label>
+        <input type="range" min="0.01" max="1" step="0.01" value="0.3" oninput="updateForce('strength', this.value); document.getElementById('val-strength').textContent=parseFloat(this.value).toFixed(2)">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Filter by company</h3>
+      <div class="company-list" id="company-list"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Options</h3>
+      <div class="company-item active" onclick="toggleLabels(this)" style="cursor:pointer">
+        <div class="company-dot" style="background:var(--accent);border-radius:2px"></div>
+        Always show labels
+      </div>
+    </div>
+
+  </div>
+
+  <div class="canvas-wrap">
+    <div class="mock-notice" id="mock-notice">⚠ MOCK DATA — Load your own JSON to visualize your network</div>
+    <svg id="graph"></svg>
+    <div class="legend">
+      <h4>Legend</h4>
+      <div class="legend-item">
+        <div class="legend-line" style="background:var(--accent);opacity:0.6"></div>
+        <span>shared employer</span>
+      </div>
+      <div class="legend-item">
+        <svg width="24" height="12"><circle cx="6" cy="6" r="5" fill="none" stroke="#888" stroke-width="1.5"/></svg>
+        <span>connection</span>
+      </div>
+      <div class="legend-item">
+        <svg width="24" height="12"><circle cx="6" cy="6" r="5" fill="none" stroke="#888" stroke-width="3"/></svg>
+        <span>more connections</span>
+      </div>
+    </div>
+    <div class="info-panel" id="info-panel">
+      <button class="info-close" onclick="closeInfo()">✕</button>
+      <h2 id="info-name"></h2>
+      <div class="role" id="info-role"></div>
+      <div class="companies" id="info-companies"></div>
+    </div>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+</div>
+
+<script>
+// ─── MOCK DATA ────────────────────────────────────────────────────────────────
+const MOCK_DATA = {
+  nodes: [
+    { id: "1",  name: "Alice Chen",       current: "Google",       companies: ["Google", "Stripe", "MIT Lab"] },
+    { id: "2",  name: "Ben Okafor",       current: "Stripe",       companies: ["Stripe", "PayPal", "YC"] },
+    { id: "3",  name: "Clara Voss",       current: "Google",       companies: ["Google", "DeepMind", "MIT Lab"] },
+    { id: "4",  name: "David Kim",        current: "DeepMind",     companies: ["DeepMind", "Google", "OpenAI"] },
+    { id: "5",  name: "Eva Martins",      current: "OpenAI",       companies: ["OpenAI", "Anthropic", "MIT Lab"] },
+    { id: "6",  name: "Frank Liu",        current: "Anthropic",    companies: ["Anthropic", "OpenAI", "Google"] },
+    { id: "7",  name: "Gina Park",        current: "Meta",         companies: ["Meta", "Instagram", "Google"] },
+    { id: "8",  name: "Hassan Ali",       current: "Meta",         companies: ["Meta", "WhatsApp", "YC"] },
+    { id: "9",  name: "Iris Novak",       current: "Stripe",       companies: ["Stripe", "Brex", "YC"] },
+    { id: "10", name: "James Torres",     current: "Brex",         companies: ["Brex", "Stripe", "PayPal"] },
+    { id: "11", name: "Keiko Sato",       current: "PayPal",       companies: ["PayPal", "Stripe", "Visa"] },
+    { id: "12", name: "Leo Ferreira",     current: "Visa",         companies: ["Visa", "PayPal", "Mastercard"] },
+    { id: "13", name: "Maya Patel",       current: "Mastercard",   companies: ["Mastercard", "Visa", "Goldman"] },
+    { id: "14", name: "Noah Williams",    current: "Goldman",      companies: ["Goldman", "JPMorgan", "Mastercard"] },
+    { id: "15", name: "Olivia Scott",     current: "JPMorgan",     companies: ["JPMorgan", "Goldman", "Citi"] },
+    { id: "16", name: "Pedro Costa",      current: "Citi",         companies: ["Citi", "JPMorgan", "HSBC"] },
+    { id: "17", name: "Quinn Harper",     current: "HSBC",         companies: ["HSBC", "Citi", "Barclays"] },
+    { id: "18", name: "Rachel Moore",     current: "Barclays",     companies: ["Barclays", "HSBC", "Goldman"] },
+    { id: "19", name: "Sam Nguyen",       current: "YC",           companies: ["YC", "Airbnb", "Stripe"] },
+    { id: "20", name: "Tara Singh",       current: "Airbnb",       companies: ["Airbnb", "Uber", "YC"] },
+    { id: "21", name: "Uma Krishnan",     current: "Uber",         companies: ["Uber", "Lyft", "Airbnb"] },
+    { id: "22", name: "Victor Blanc",     current: "Lyft",         companies: ["Lyft", "Uber", "DoorDash"] },
+    { id: "23", name: "Wendy Zhang",      current: "DoorDash",     companies: ["DoorDash", "Lyft", "Instacart"] },
+    { id: "24", name: "Xander Brown",     current: "Instacart",    companies: ["Instacart", "DoorDash", "Amazon"] },
+    { id: "25", name: "Yuki Tanaka",      current: "Amazon",       companies: ["Amazon", "AWS", "Microsoft"] },
+    { id: "26", name: "Zara Ahmed",       current: "Microsoft",    companies: ["Microsoft", "Amazon", "LinkedIn"] },
+    { id: "27", name: "Adam Foster",      current: "LinkedIn",     companies: ["LinkedIn", "Microsoft", "Google"] },
+    { id: "28", name: "Beth Holland",     current: "AWS",          companies: ["AWS", "Amazon", "Google"] },
+    { id: "29", name: "Carlos Reyes",     current: "OpenAI",       companies: ["OpenAI", "Google", "DeepMind"] },
+    { id: "30", name: "Dana White",       current: "Anthropic",    companies: ["Anthropic", "MIT Lab", "OpenAI"] },
+  ]
+};
+
+// Build edges from shared companies
+function buildEdges(nodes) {
+  const edges = [];
+  const seen = new Set();
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const a = nodes[i], b = nodes[j];
+      const shared = a.companies.filter(c => b.companies.includes(c));
+      if (shared.length > 0) {
+        const key = `${a.id}-${b.id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          edges.push({ source: a.id, target: b.id, companies: shared, weight: shared.length });
+        }
+      }
+    }
+  }
+  return edges;
+}
+
+// ─── COLOR PALETTE ────────────────────────────────────────────────────────────
+const PALETTE = [
+  "#00e5ff","#ff6b35","#7fff6b","#ff4fd8","#ffd700",
+  "#a78bfa","#34d399","#f87171","#60a5fa","#fb923c",
+  "#e879f9","#4ade80","#38bdf8","#facc15","#f472b6"
+];
+
+// ─── GRAPH STATE ──────────────────────────────────────────────────────────────
+let graphData = null;
+let simulation = null;
+let svg, g, linkSel, nodeSel;
+let companyColors = {};
+let activeCompanies = new Set();
+let alwaysLabels = false;
+let currentCharge = -300, currentDistance = 80, currentStrength = 0.3;
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function init(data) {
+  const nodes = data.nodes.map(d => ({ ...d }));
+  const edges = buildEdges(nodes);
+  graphData = { nodes, edges };
+
+  // Assign colors to companies
+  const allCompanies = [...new Set(nodes.flatMap(n => n.companies))].sort();
+  allCompanies.forEach((c, i) => companyColors[c] = PALETTE[i % PALETTE.length]);
+  activeCompanies = new Set(allCompanies);
+
+  // Stats
+  document.getElementById('stat-nodes').textContent = nodes.length;
+  document.getElementById('stat-edges').textContent = edges.length;
+  document.getElementById('stat-companies').textContent = allCompanies.length;
+
+  // Company filter list
+  const list = document.getElementById('company-list');
+  list.innerHTML = '';
+  allCompanies.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'company-item active';
+    item.dataset.company = c;
+    item.innerHTML = `<div class="company-dot" style="background:${companyColors[c]}"></div>${c}`;
+    item.onclick = () => toggleCompany(c, item);
+    list.appendChild(item);
+  });
+
+  renderGraph(nodes, edges);
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderGraph(nodes, edges) {
+  const svgEl = document.getElementById('graph');
+  svgEl.innerHTML = '';
+
+  const W = svgEl.clientWidth, H = svgEl.clientHeight;
+
+  svg = d3.select('#graph');
+
+  // Zoom
+  const zoom = d3.zoom().scaleExtent([0.1, 8]).on('zoom', e => g.attr('transform', e.transform));
+  svg.call(zoom);
+
+  g = svg.append('g');
+
+  // Defs: glow filter
+  const defs = svg.append('defs');
+  const filter = defs.append('filter').attr('id', 'glow');
+  filter.append('feGaussianBlur').attr('stdDeviation', '3').attr('result', 'coloredBlur');
+  const feMerge = filter.append('feMerge');
+  feMerge.append('feMergeNode').attr('in', 'coloredBlur');
+  feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+  // Node degree map (for sizing)
+  const degreeMap = {};
+  nodes.forEach(n => degreeMap[n.id] = 0);
+  edges.forEach(e => { degreeMap[e.source]++; degreeMap[e.target]++; });
+
+  // Node dominant color = color of first company
+  function nodeColor(n) { return companyColors[n.companies[0]] || '#888'; }
+
+  // Links
+  linkSel = g.append('g').selectAll('line')
+    .data(edges).enter().append('line')
+    .attr('class', 'link')
+    .attr('stroke', d => {
+      // color by shared company
+      return companyColors[d.companies[0]] || '#00e5ff';
+    })
+    .attr('stroke-width', d => 0.5 + d.weight * 0.5);
+
+  // Nodes
+  nodeSel = g.append('g').selectAll('.node')
+    .data(nodes).enter().append('g')
+    .attr('class', 'node')
+    .attr('data-id', d => d.id)
+    .call(d3.drag()
+      .on('start', dragStart)
+      .on('drag', dragged)
+      .on('end', dragEnd))
+    .on('mouseover', onNodeHover)
+    .on('mouseout', onNodeOut)
+    .on('click', onNodeClick);
+
+  nodeSel.append('circle')
+    .attr('r', d => 5 + (degreeMap[d.id] || 0) * 1.5)
+    .attr('fill', d => nodeColor(d) + '22')
+    .attr('stroke', d => nodeColor(d))
+    .attr('stroke-width', 1.5)
+    .style('filter', 'url(#glow)');
+
+  nodeSel.append('text')
+    .text(d => d.name.split(' ')[0])
+    .attr('x', d => 8 + (degreeMap[d.id] || 0) * 1.5)
+    .attr('y', 4)
+    .attr('fill', d => nodeColor(d));
+
+  // Simulation
+  simulation = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(edges).id(d => d.id).distance(currentDistance).strength(currentStrength))
+    .force('charge', d3.forceManyBody().strength(currentCharge))
+    .force('center', d3.forceCenter(W / 2, H / 2))
+    .force('collide', d3.forceCollide(18))
+    .on('tick', tick);
+}
+
+function tick() {
+  linkSel
+    .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+    .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+  nodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
+}
+
+// ─── DRAG ─────────────────────────────────────────────────────────────────────
+function dragStart(event, d) {
+  if (!event.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x; d.fy = d.y;
+}
+function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+function dragEnd(event, d) {
+  if (!event.active) simulation.alphaTarget(0);
+  // keep pinned — click to unpin
+}
+
+// ─── HOVER ────────────────────────────────────────────────────────────────────
+function onNodeHover(event, d) {
+  const connected = new Set([d.id]);
+  const connectedLinks = new Set();
+  graphData.edges.forEach((e, i) => {
+    const sid = typeof e.source === 'object' ? e.source.id : e.source;
+    const tid = typeof e.target === 'object' ? e.target.id : e.target;
+    if (sid === d.id || tid === d.id) {
+      connected.add(sid); connected.add(tid);
+      connectedLinks.add(i);
+    }
+  });
+
+  nodeSel.classed('dimmed', nd => !connected.has(nd.id));
+  nodeSel.classed('hovered', nd => nd.id === d.id);
+  linkSel.classed('dimmed', (_, i) => !connectedLinks.has(i));
+  linkSel.classed('highlighted', (_, i) => connectedLinks.has(i));
+
+  // Tooltip
+  const tip = document.getElementById('tooltip');
+  tip.textContent = d.name + ' · ' + d.current;
+  tip.style.display = 'block';
+  tip.style.left = (event.pageX + 12) + 'px';
+  tip.style.top = (event.pageY - 10) + 'px';
+}
+
+function onNodeOut() {
+  nodeSel.classed('dimmed', false).classed('hovered', false);
+  linkSel.classed('dimmed', false).classed('highlighted', false);
+  document.getElementById('tooltip').style.display = 'none';
+}
+
+// ─── CLICK ────────────────────────────────────────────────────────────────────
+function onNodeClick(event, d) {
+  event.stopPropagation();
+  document.getElementById('info-name').textContent = d.name;
+  document.getElementById('info-role').textContent = d.current;
+
+  const sharedWith = [];
+  graphData.edges.forEach(e => {
+    const sid = typeof e.source === 'object' ? e.source.id : e.source;
+    const tid = typeof e.target === 'object' ? e.target.id : e.target;
+    if (sid === d.id || tid === d.id) {
+      const otherId = sid === d.id ? tid : sid;
+      const other = graphData.nodes.find(n => n.id === otherId);
+      if (other) sharedWith.push(`<b>${other.name}</b> via ${e.companies.join(', ')}`);
+    }
+  });
+
+  document.getElementById('info-companies').innerHTML =
+    `<div style="margin-bottom:8px;color:var(--text-dim)">Companies: ${d.companies.join(', ')}</div>` +
+    (sharedWith.length ? `<div style="color:var(--text-dim)">Shared with:<br>${sharedWith.slice(0,8).join('<br>')}</div>` : '');
+
+  document.getElementById('info-panel').classList.add('visible');
+}
+
+svg && document.getElementById('graph').addEventListener('click', closeInfo);
+function closeInfo() { document.getElementById('info-panel').classList.remove('visible'); }
+
+// ─── FORCES ───────────────────────────────────────────────────────────────────
+function updateForce(type, val) {
+  if (!simulation) return;
+  if (type === 'charge') { currentCharge = +val; simulation.force('charge').strength(+val); }
+  if (type === 'distance') { currentDistance = +val; simulation.force('link').distance(+val); }
+  if (type === 'strength') { currentStrength = +val; simulation.force('link').strength(+val); }
+  simulation.alpha(0.3).restart();
+}
+
+// ─── SEARCH ───────────────────────────────────────────────────────────────────
+function searchGraph(query) {
+  if (!nodeSel) return;
+  if (!query) { nodeSel.classed('dimmed', false).classed('labeled', false); linkSel.classed('dimmed', false); return; }
+  const q = query.toLowerCase();
+  const matched = new Set();
+  graphData.nodes.forEach(n => {
+    if (n.name.toLowerCase().includes(q) || n.companies.some(c => c.toLowerCase().includes(q))) matched.add(n.id);
+  });
+  nodeSel.classed('dimmed', d => !matched.has(d.id));
+  nodeSel.classed('labeled', d => matched.has(d.id));
+  linkSel.classed('dimmed', e => {
+    const sid = typeof e.source === 'object' ? e.source.id : e.source;
+    const tid = typeof e.target === 'object' ? e.target.id : e.target;
+    return !matched.has(sid) || !matched.has(tid);
+  });
+}
+
+// ─── COMPANY FILTER ───────────────────────────────────────────────────────────
+function toggleCompany(company, el) {
+  if (activeCompanies.has(company)) {
+    activeCompanies.delete(company);
+    el.classList.remove('active');
+    el.style.opacity = '0.4';
+  } else {
+    activeCompanies.add(company);
+    el.classList.add('active');
+    el.style.opacity = '1';
+  }
+  applyCompanyFilter();
+}
+
+function applyCompanyFilter() {
+  if (!linkSel) return;
+  linkSel.style('display', e => {
+    return e.companies.some(c => activeCompanies.has(c)) ? null : 'none';
+  });
+}
+
+// ─── LABELS ───────────────────────────────────────────────────────────────────
+function toggleLabels(el) {
+  alwaysLabels = !alwaysLabels;
+  el.classList.toggle('active', alwaysLabels);
+  nodeSel && nodeSel.classed('labeled', alwaysLabels);
+}
+
+// ─── FILE LOAD ────────────────────────────────────────────────────────────────
+function loadFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      document.getElementById('mock-notice').style.display = 'none';
+      companyColors = {};
+      activeCompanies = new Set();
+      init(data);
+    } catch(err) {
+      alert('Invalid JSON file. Please check the format.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => init(MOCK_DATA));
+window.addEventListener('resize', () => {
+  if (graphData && simulation) {
+    const svgEl = document.getElementById('graph');
+    simulation.force('center', d3.forceCenter(svgEl.clientWidth / 2, svgEl.clientHeight / 2));
+    simulation.alpha(0.1).restart();
+  }
+});
+</script>
+</body>
+</html>
