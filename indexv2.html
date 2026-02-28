@@ -78,26 +78,6 @@
       <h3>Search</h3>
       <input type="text" class="search-box" id="search" placeholder="name or company..." oninput="onSearch(this.value)">
     </div>
-    <div class="sidebar-section">
-      <h3>Zoom</h3>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:0.62rem;color:var(--text-dim)">−</span>
-        <input type="range" id="zoom-slider" min="4" max="2000" value="85" style="flex:1;-webkit-appearance:none;height:2px;background:var(--border);outline:none;border-radius:2px" oninput="setZoomFromSlider(this.value)">
-        <span style="font-size:0.62rem;color:var(--text-dim)">+</span>
-      </div>
-      <div style="font-size:0.58rem;color:var(--text-dim);margin-top:6px;text-align:center" id="zoom-label">85%</div>
-    </div>
-    <div class="sidebar-section">
-      <h3>Layout</h3>
-      <div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;font-size:0.62rem;color:var(--text-dim);margin-bottom:5px">Separation <span id="val-sep" style="color:var(--text)">medium</span></div>
-        <input type="range" id="sep-slider" min="1" max="5" value="3" step="1" style="-webkit-appearance:none;width:100%;height:2px;background:var(--border);outline:none;border-radius:2px" oninput="updateSeparation(+this.value)">
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;font-size:0.62rem;color:var(--text-dim);margin-bottom:5px">Link pull <span id="val-pull" style="color:var(--text)">medium</span></div>
-        <input type="range" id="pull-slider" min="1" max="5" value="3" step="1" style="-webkit-appearance:none;width:100%;height:2px;background:var(--border);outline:none;border-radius:2px" oninput="updateLinkPull(+this.value)">
-      </div>
-    </div>
     <div class="sidebar-section" style="flex:1;overflow-y:auto">
       <h3>Companies <span style="color:var(--text-dim);font-size:0.52rem">click to zoom · dbl-click to expand</span></h3>
       <div class="cluster-list" id="cluster-list"></div>
@@ -167,7 +147,6 @@ let tx=0,ty=0,tk=1;
 let isPanning=false,panStart=null,dragNode=null;
 let hoveredItem=null,searchQ='',mode='clusters',focusedCluster=null;
 let allNodes=[],clusterList=[],clusterMap={},clusterEdges=[],companyColors={};
-let currentSep=2.5,currentLinkPull=0.12;
 let visNodes=[],visEdges=[],sim=null;
 
 // ── LOADING ──────────────────────────────────────────────────────────────────
@@ -234,11 +213,11 @@ function switchToClusterView(){
 
   if(sim)sim.stop();
   sim=d3.forceSimulation(sn)
-    .force('link',d3.forceLink(se).id(d=>d.id).distance(d=>150+d.weight*.2).strength(()=>currentLinkPull))
-    .force('charge',d3.forceManyBody().strength(d=>-Math.pow(d.r,2.2)*currentSep))
+    .force('link',d3.forceLink(se).id(d=>d.id).distance(d=>80+d.weight*.4).strength(.35))
+    .force('charge',d3.forceManyBody().strength(d=>-Math.pow(d.r,1.9)).distanceMax(600))
     .force('center',d3.forceCenter(0,0))
-    .force('collide',d3.forceCollide(d=>d.r+20))
-    .alphaDecay(.015)
+    .force('collide',d3.forceCollide(d=>d.r+10))
+    .alphaDecay(.022)
     .on('tick',draw)
     .on('end',()=>{hideLoad();draw();});
 
@@ -277,11 +256,11 @@ function switchToNodeView(cname){
 
   if(sim)sim.stop();
   sim=d3.forceSimulation(visNodes)
-    .force('link',d3.forceLink(visEdges).id(d=>d.id).distance(65).strength(()=>currentLinkPull))
-    .force('charge',d3.forceManyBody().strength(-200*currentSep))
+    .force('link',d3.forceLink(visEdges).id(d=>d.id).distance(55).strength(.5))
+    .force('charge',d3.forceManyBody().strength(-130).distanceMax(300))
     .force('center',d3.forceCenter(0,0))
-    .force('collide',d3.forceCollide(15))
-    .alphaDecay(.025)
+    .force('collide',d3.forceCollide(13))
+    .alphaDecay(.03)
     .on('tick',draw).on('end',draw);
 
   resetView(); draw();
@@ -433,13 +412,13 @@ function onWheel(e){
   const nk=Math.max(.04,Math.min(20,tk*f));
   tx=e.offsetX-(e.offsetX-tx)*(nk/tk);
   ty=e.offsetY-(e.offsetY-ty)*(nk/tk);
-  tk=nk; syncZoomSlider(); draw();
+  tk=nk; draw();
 }
 
 // ── ZOOM CONTROLS ────────────────────────────────────────────────────────────
 function zoomBy(f){
   const nk=Math.max(.04,Math.min(20,tk*f));
-  tx=W/2-(W/2-tx)*(nk/tk); ty=H/2-(H/2-ty)*(nk/tk); tk=nk; syncZoomSlider(); draw();
+  tx=W/2-(W/2-tx)*(nk/tk); ty=H/2-(H/2-ty)*(nk/tk); tk=nk; draw();
 }
 function resetView(){tx=W/2;ty=H/2;tk=.85;draw();}
 
@@ -495,36 +474,6 @@ function closeInfo(){$('info-panel').classList.remove('visible');}
 // ── SEARCH ───────────────────────────────────────────────────────────────────
 function onSearch(q){searchQ=q.toLowerCase().trim();draw();}
 
-
-// ── ZOOM SLIDER SYNC ────────────────────────────────────────────────────────
-function syncZoomSlider(){
-  const sl=$('zoom-slider'); if(!sl)return;
-  const pct=Math.round(tk*100);
-  sl.value=Math.min(2000,Math.max(4,pct));
-  $('zoom-label').textContent=pct+'%';
-}
-function setZoomFromSlider(v){
-  const newK=v/100;
-  tx=W/2-(W/2-tx)*(newK/tk); ty=H/2-(H/2-ty)*(newK/tk); tk=newK;
-  $('zoom-label').textContent=Math.round(tk*100)+'%';
-  draw();
-}
-const SEP_LABELS=['very low','low','medium','high','very high'];
-function updateSeparation(v){
-  currentSep=[0.5,1,2.5,5,10][v-1];
-  $('val-sep').textContent=SEP_LABELS[v-1];
-  if(!sim)return;
-  if(mode==='clusters') sim.force('charge',d3.forceManyBody().strength(d=>-Math.pow(d.r,2.2)*currentSep));
-  else sim.force('charge',d3.forceManyBody().strength(-200*currentSep));
-  sim.alpha(.4).restart();
-}
-function updateLinkPull(v){
-  currentLinkPull=[0.02,0.06,0.12,0.25,0.5][v-1];
-  $('val-pull').textContent=SEP_LABELS[v-1];
-  if(!sim)return;
-  sim.force('link').strength(()=>currentLinkPull);
-  sim.alpha(.3).restart();
-}
 // ── FILE LOAD ────────────────────────────────────────────────────────────────
 function loadFile(e){
   const f=e.target.files[0]; if(!f)return;
